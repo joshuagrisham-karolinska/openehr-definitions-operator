@@ -1,0 +1,51 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: openehr-definitions-operator-role
+rules:
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create]
+  - apiGroups: [""]
+    resources: [configmaps]
+    verbs: [list, watch, patch, get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openehr-definitions-operator-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: openehr-definitions-operator-role
+subjects:
+  - kind: ServiceAccount
+    name: default
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: openehr-definitions-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openehr-definitions-operator
+  template:
+    metadata:
+      labels:
+        app: openehr-definitions-operator
+    spec:
+      containers:
+        - name: controller
+          image: kind-registry:5000/openehr-definitions-operator:latest
+          imagePullPolicy: Always
+          securityContext:
+            privileged: false
+          env:
+            - name: NAMESPACE
+              value: ehrbase
+            - name: OPENEHR_API_BASEURL
+              value: http://ehrbase:8080/ehrbase/rest/openehr/v1/
+      restartPolicy: Always
